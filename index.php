@@ -19,7 +19,7 @@ $client = new Client([
 
 $query = 'from(bucket: "test")
 |> range(start: 2022-10-08T07:30:00Z, stop: 2022-12-12T07:31:00Z)
-|> filter(fn: (r) => r._measurement == "pc")
+|> filter(fn: (r) => r._measurement == "home")
 |> group()';
 $results = $client->createQueryApi()->query($query, $org); 
 
@@ -28,6 +28,7 @@ $results = $client->createQueryApi()->query($query, $org);
 
 $client->close();
 $time_stamp = '';
+$x_labels = '';
 $y_values = '';
 ?>
 
@@ -62,6 +63,7 @@ $y_values = '';
         foreach($result->records as $key => $record){
             $time_stamp .= ','.strtotime($record->values['_time']);
             $y_values .= ','.$record->values['_value'];
+            $x_labels .= ','.date('m/d/Y H:i:s', strtotime($record->values['_time']));;
         ?>
             <tr>
                 <td><?php echo $key+1; ?></td>
@@ -84,15 +86,17 @@ $y_values = '';
 <script>
     var php_var = "<?php echo $time_stamp; ?>";
     var php_var_y = "<?php echo $y_values; ?>";
+    var x_labels = "<?php echo $x_labels; ?>";
     var xValues = php_var.split(',');
     var yValues = php_var_y.split(',');
+    var x_labels_split = x_labels.split(',');
     // alert(xValues);
     // var yValues = [7,8,8,9,9,9,10,11,14,14,15];
 
 new Chart("myChart", {
   type: "line",
   data: {
-    labels: xValues,
+    labels: x_labels_split,
     datasets: [{
       fill: false,
       lineTension: 0,
@@ -104,7 +108,23 @@ new Chart("myChart", {
   options: {
     legend: {display: false},
     scales: {
-        // s
+    //     xAxes: [{type: 'time',time: {
+    //     displayFormats: {
+    //        'millisecond': 'MMM DD',
+    //        'second': 'MMM DD',
+    //        'minute': 'MMM DD',
+    //        'hour': 'MMM DD',
+    //        'day': 'MMM DD',
+    //        'week': 'MMM DD',
+    //        'month': 'MMM DD',
+    //        'quarter': 'MMM DD',
+    //        'year': 'MMM DD',
+    //     }}
+    //     // , unit: 'second',
+    //     // unitStepSize: 1,
+    // }
+    //     /**, {ticks: {min: 1670675283, max: 1670848083}} */
+    // ],
       yAxes: [{ticks: {min: 0, max:100}}]
     }
   }
