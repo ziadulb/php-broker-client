@@ -22,7 +22,7 @@ $connectionSettings = (new ConnectionSettings)
   ->setPassword($password)
   ->setKeepAliveInterval(60)
   // ->setLastWillTopic('emqx/test/last-will')
-  ->setLastWillTopic('test')
+  ->setLastWillTopic('Device/performance/info')
   ->setLastWillMessage('client disconnect')
   ->setLastWillQualityOfService(1);
 
@@ -45,20 +45,19 @@ $mqtt = new MqttClient($server, $port, $clientId, $mqtt_version);
 $mqtt->connect($connectionSettings, $clean_session);
 printf("client connected\n");
 
-$mqtt->subscribe('test', function ($topic, $message) use ($writeApi, $bucket, $org){
+$mqtt->subscribe('Device/performance/info', function ($topic, $message) use ($writeApi, $bucket, $org){
 
     $msg = json_decode($message);
-    print_r($msg);
     $dataArray = [
-        'name' => 'bdcom',
-        'tags' => ['device' => $msg->did],
-        'fields' => ['temp' => $msg->temp, 'him' => $msg->him, 'v1' => $msg->v1, 'v2' => $msg->v2, 'v3' => $msg->v3, 'i1' => $msg->i1, 'i2' => $msg->i2, 'v3' => $msg->i3, 'f1' => $msg->f1, 'f2' => $msg->f2, 'f3' => $msg->f3, 'smo' => $msg->smo, 'liq' => $msg->liq],
-        'time' => strtotime(time())
+        'name' => $msg->device,
+        'tags' => ['department' => $msg->department, 'category' => $msg->category],
+        'fields' => ['cpu_percent' => $msg->cpu_percent, 'virtual_memory' => $msg->virtual_memory, 'virtual_memory_precent' => $msg->virtual_memory_precent],
+        'time' => strtotime($msg->date)
     ];
     
     $writeApi->write($dataArray, WritePrecision::S, $bucket, $org);
-    printf("Data Stored Successfully \n");
-    
+    // printf("%d, Data Stored Successfully \n", $msg->count);
+    print_r($dataArray);
 }, 0);
 
 

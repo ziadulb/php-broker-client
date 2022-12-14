@@ -21,10 +21,11 @@ $query = 'from(bucket: "test")
 // |> range(start: 2022-10-08T07:30:00Z, stop: 2022-12-12T07:31:00Z)
 |> range(start: 2022-12-10T08:34:00Z, stop: 2022-12-14T08:36:00Z)
 |> filter(fn: (r) => r._measurement == "bdcom")
-|> filter(fn: (r) => r._field == "temp")
+|> filter(fn: (r) => r._field == "v1" or r._field == "v2" or r._field == "v3" or r._field == "f1" or r._field == "f2" or r._field == "f3" or r._field == "i1" or r._field == "i2" or r._field == "temp" or r._field == "him" or r._field == "smo" or r._field == "liq")
 |> map(fn: (r) => ({r with _value: (float(v: r._value))} ))
+|> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
 // |> aggregateWindow(every: 1d, fn: mean)
-// |> group()'
+|> group()'
 ;
 $results = $client->createQueryApi()->query($query, $org); 
 
@@ -53,42 +54,34 @@ $y_values = '';
 
   <?php require './navbar.php'; ?> 
 
-
-
   <canvas id="myChart" style="width:100%;max-width:600px"></canvas>
 
-  <table class="table table-dark table-hover">
+  <table class="table table-dark table-hover"><?php
+    foreach($results as $result){ 
+      $key_index = array()?>
       <thead>
-          <tr>
-              <td>#</td>
-              <td>Device</td>
-              <td>Tag1</td>
-              <td>Tag2</td>
-              <td>Col</td>
-              <td>Value</td>
-              <td>TimeStamp</td>
-          </tr>
+        <tr><?php
+          foreach($result->columns as $key => $column){ 
+            if(($column->label != 'result') && ($column->label != 'table') && ($column->label != '_start') && ($column->label != '_stop') ){?>
+              <th><?php echo $column->label; ?></th><?php
+            }
+            array_push($key_index, $column->label);
+          }?>
+        </tr>
       </thead>
+
       <tbody><?php
-      foreach($results as $result){
-          foreach($result->records as $key => $record){
-              $time_stamp .= ','.strtotime($record->values['_time']);
-              $y_values .= ','.$record->values['_value'];
-              $x_labels .= ','.date('m/d/Y H:i:s', strtotime($record->values['_time']));;
-          ?>
-              <tr>
-                  <td><?php echo $key+1; ?></td>
-                  <td><?php echo $record->values['_measurement']; ?></td>
-                  <td><?php echo $record->values['department'] ?? null; ?></td>
-                  <td><?php echo $record->values['category'] ?? null; ?></td>
-                  <td><?php echo $record->values['_field']; ?></td>
-                  <td><?php echo $record->values['_value']; ?></td>
-                  <td><?php echo $record->values['_time']; ?></td>
-              </tr><?php
-          }
-      }?>
-          
-      </tbody>
+        foreach ($result->records as $key => $record) { ?>
+          <tr><?php
+          foreach ($key_index as $val) {
+            if(($val != 'result') && ($val != 'table') && ($val != '_start') && ($val != '_stop') ){?>
+              <td><?php echo $record->values[$val] ?></td><?php
+            }
+          }?>
+          </tr><?php
+        }?>
+      </tbody><?php
+    }?>
   </table>
 
 </div>
